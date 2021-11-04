@@ -1,0 +1,3 @@
+When using BINARY_ADD you have to first pop the values which you 
+want to be adding together. If you called the BINARY_ADD before the values
+are popped the BINARY_ADD will not know what it is adding together

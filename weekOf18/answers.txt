@@ -1,0 +1,84 @@
+CH9P2
+a = 1 + 2 + 3
+b = a + 4
+c = a + b
+
+
+ByteCode
+
+co_names = ['a','b','c']
+co_consts = [1,2,3,4]
+co_code = [
+    100,0,100,1,100,2,23,90,0,
+    101,0,100,3,23,90,1,
+    101,0,101,1,23,90,2
+    ]
+
+
+CH9P3
+co_names = ['x']
+co_consts = [2,3,4]
+co_code = [100,0,100,1,20,100,2,23,90,0]
+
+Python
+
+x = 2 + 3 + 4
+
+
+CH9P4
+co_names = ['x']
+co_consts = [2,3,4]
+co_code = [100,0,100,1,20,100,2,23,90,0,101,0,71,72]
+
+Python
+x = 2*3+4
+print(x)
+print()
+
+
+CH10P2
+No, the order of the if statements do not matter
+
+
+CH10P3
+It is called co_names and not co_values because the data in co_names 
+is of string type that represent the name of values.
+
+
+CH10P5
+When using BINARY_ADD you have to first pop the values which you 
+want to be adding together. If you called the BINARY_ADD before the values
+are popped the BINARY_ADD will not know what it is adding together
+
+
+CH11P1
+
+    .text  
+    .global _start
+_start:
+    mov r1,#1
+    mov r2,#2
+    add r0,r1,r2
+    mov r3,#3
+    add r0,r0,r3
+    mov r7,#1
+    svc 0
+
+
+CH11P2
+    .text
+    .global _start
+_start:
+    mov r0,#1
+    bl f
+f:
+    add r0,r0,#1
+    bl g
+g:
+    add r0,r0,#2
+    mov r7, #1
+    svc 0
+    
+
+CH11P9
+The program fails because it loads the a and does nothing with it
