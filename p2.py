@@ -12,7 +12,7 @@ class Token:
 
 
 # global variables
-trace = False      # controls token trace
+trace = True      # controls token trace
 grade = False      # set to True to create output to be graded
 source = ''        # receives entire source program
 sourceindex = 0    # index into source
@@ -72,6 +72,8 @@ COLON = 29     # ':'
 
 INDENT = 30     # indentation
 DEDENT = 31     # outdentation
+
+sign = 1
 
 # displayable names for each token category
 catnames = ['EOF', 'PRINT', 'UNSIGNEDINT', 'NAME', 'ASSIGNOP',
@@ -332,6 +334,7 @@ def stmt():
         compoundstmt()
     else:
         simplestmt()
+        consume(NEWLINE)
 
 
 def simplestmt():
@@ -339,7 +342,7 @@ def simplestmt():
         printstmt()
     elif token.category == PASS:
         passstmt()
-    elif token.category == ASSIGNOP:
+    elif token.category == NAME:
         assignmentstmt()
     else:
         print("Not the correct value")
@@ -356,7 +359,6 @@ def compoundstmt():
 
 def assignmentstmt():
     consume(NAME)
-    consume(EQUAL)
     relexpr()
 
 
@@ -427,8 +429,12 @@ def term():
 
 
 def factor():
+    global sign
     advance()
+
     if token.category == UNSIGNEDFLOAT:
+        advance()
+    elif token.category == ASSIGNOP:
         advance()
     elif token.category == STRING:
         advance()
@@ -438,16 +444,21 @@ def factor():
         advance()
     elif token.category == NONE:
         advance()
-    elif token.category == RIGHTPAREN:
-        relexpr()
+    elif token.category == LEFTPAREN:
         consume(LEFTPAREN)
+        relexpr()
+        consume(RIGHTPAREN)
     elif token.category == PLUS:
+        advance()
         factor()
     elif token.category == MINUS:
-
+        sign = -(sign)
+        advance()
         factor()
+    elif token.category == UNSIGNEDINT:
+        advance()
     else:
-        print("Something went wrong")
+        print("What?? " + token.lexeme + " : " + (str)(token.category))
 
 
 ####################
