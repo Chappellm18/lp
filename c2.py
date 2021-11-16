@@ -24,12 +24,11 @@ prevchar = '\n'    # '\n' in prevchar signals start of new line
 blankline = True
 symbol = []        # list of variable names
 value = []
-tempcount = 0      # sequence number for temp asm variables
-sign = +1
 needword = []
 loc = []
-nextreg = 0
-index = 0
+nextreg = 1
+tempcount = 0      # sequence number for temp asm variables
+sign = +1
 
 # constants
 EOF = 0      # end of file
@@ -88,7 +87,7 @@ def main():
         source = source + '\n'
     lines = source.splitlines()
 
-    outfile.write('@ ' + time.strftime('%c') + '%34s' % 'YOUR NAME HERE\n')
+    outfile.write('@ ' + time.strftime('%c') + '%34s' % 'Mitchell Chappell\n')
     outfile.write('@ ' + 'Compiler    = ' + sys.argv[0] + '\n')
     outfile.write('@ ' + 'Input file  = ' + sys.argv[1] + '\n')
     outfile.write('@ ' + 'Output file = ' + sys.argv[2] + '\n')
@@ -204,7 +203,7 @@ def getchar():
 
 
 def enter(s, v, w):
-    global nextreg, needwork, needwork
+    global nextreg
     if s in symbol:
         return symbol.index(s)
     # otherwise, add s to symbol and return its index
@@ -213,13 +212,10 @@ def enter(s, v, w):
     else:
         loc.append('r' + str(nextreg))
         nextreg += 1
-
     index = len(symbol)
     symbol.append(s)
     value.append(v)
     needword.append(w)
-    outfile.write('          ldr r1, =' + symbol[index] + '\n')
-    needword[index] = True
     return index
 
 ####################
@@ -321,14 +317,14 @@ def factor():
         advance()
         return factor()
     elif token.category == UNSIGNEDINT:
-        if sign == +1:
+        if sign == 1:
             index = enter('.i' + token.lexeme, token.lexeme, False)
         else:
             index = enter('.i_' + token.lexeme, '-' + token.lexeme, False)
         advance()
         return index
     elif token.category == NAME:
-        index = enter(token.lexeme, '0', True)
+        index = enter(token.lexeme, '0', False)
         if sign == -1:
             index = cg_neg(index)
         advance()
@@ -357,13 +353,14 @@ def cg_prolog():
 
 
 def cg_epilog():
+    if needfmt0:
+        outfile.write('.fmt0:      .asciz "%d\\n"\n')
     outfile.write('\n')
     outfile.write('          mov r0, #0\n')
     outfile.write('          pop {pc}\n\n')
     outfile.write('          .data\n')
     outfile.write('.z0:      .asciz "%d\\n"\n')
     size = len(symbol)
-
     i = 0
     while i < size:
         outfile.write('%-10s' % (symbol[i] + ':') +
@@ -375,63 +372,139 @@ def cg_gettemp():
     global tempcount
     temp = '.t' + str(tempcount)
     tempcount += 1
-    return enter(temp, '0', True)
+    return enter(temp, '0', False)
 
 
 def cg_assign(leftindex, rightindex):
     global tempcount
     if symbol[rightindex].startswith('.t'):
         tempcount -= 1
-    outfile.write('          ldr r0,  =' + symbol[rightindex] + '\n')
-    outfile.write('          ldr r0, [r0]\n')
-    outfile.write('          ldr r1, =' + symbol[leftindex] + '\n')
-    outfile.write('          str r0, [r1]\n')
+
+    if symbol[rightindex].startswith('.i'):
+        constonright = True
+    else:
+        constonright = False
+    if loc[rightindex] == None:
+        regonright = False
+    else:
+        regonright = True
+        rightreg = loc[rightindex]
+    if loc[leftindex] == None:
+        regonleft = False
+    else:
+        regonleft = True
+        leftreg = loc[leftindex]
+
+    if regonright and regonleft:
+        outfile.write('          mov ' + leftreg + ', ' + rightreg + '\n')
+    elif regonleft and constonright:
+        outfile.write('          ldr ' + leftreg +
+                      ', ' + symbol[rightindex] + '\n')
+        needword[rightindex] = True
+    elif regonleft and not constonright:
+        outfile.write('          ldr r0, =' + symbol[rightindex] + '\n')
+        outfile.write('          ldr ' + leftreg + ', [r0]\n')
+        needword[rightindex] = True
+    elif regonright:
+        outfile.write('          ldr r0, =' + symbol[leftindex] + '\n')
+        outfile.write('          str ' + rightreg + ', [r0]\n')
+        needword[leftindex] = True
+    elif constonright:
+        outfile.write('          ldr r0, ' + symbol[rightindex] + '\n')
+        outfile.write('          ldr r1, =' + symbol[leftindex] + '\n')
+        outfile.write('          str r0, [r1]\n')
+        needword[leftindex] = True
+        needword[rightindex] = True
+    else:
+        outfile.write('          ldr r0, =' + symbol[rightindex] + '\n')
+        outfile.write('          ldr r0, [r0]\n')
+        outfile.write('          ldr r1, =' + symbol[leftindex] + '\n')
+        outfile.write('          str r0, [r1]\n')
+        needword[leftindex] = True
+        needword[rightindex] = True
 
 
-def cg_print(exprindex):
-    global tempcount, index
+def cg_print(index):
+    global tempcount, needfmt0
+    needfmt0 = True
+    outfile.write('          ldr r0, =.fmt0\n')
     if symbol[index].startswith('.t'):
         tempcount -= 1
-    outfile.write('          ldr r0, =.z0\n')
-    outfile.write('          ldr r1, =' + symbol[exprindex] + '\n')
-    outfile.write('          ldr r1, [r1]\n')
+
+    if not symbol[index].startswith('r'):
+        if symbol[index].startswith('.i'):
+            outfile.write('          mov r1, #' + symbol[index] + '\n')
+        else:
+            outfile.write('          ldr r1, =' + symbol[index] + '\n')
+            outfile.write('          ldr r1, [r1]\n')
+        needword[index] = True
+    else:
+        outfile.write('          mov r1, ' + loc[index] + '\n')
     outfile.write('          bl printf\n')
 
 
 def cg_add(leftindex, rightindex):
     global tempcount
+
+    result = 0
+    if symbol[leftindex].startswith('.i'):
+        if symbol[leftindex].startswith('.i_'):
+            result += int(symbol[leftindex][3:])
+        else:
+            result += int(symbol[leftindex][2:])
+
+    if symbol[rightindex].startswith('.i'):
+        if symbol[rightindex].startswith('.i_'):
+            result += int(symbol[rightindex][3:])
+        else:
+            result += int(symbol[rightindex][2:])
+
+    if result >= 0:
+        enter('.i' + str(result), str(result), False)
+    else:
+        enter('.i_' + str(-result), str(result), False)
+
     if symbol[leftindex].startswith('.t'):
         tempcount -= 1
     if symbol[rightindex].startswith('.t'):
         tempcount -= 1
 
-    # if left positive
-    if symbol[leftindex].startswith('.i') and not symbol[leftindex].startswith('.i_'):
-        # if right positive
-        if symbol[rightindex].startswith('.i') and not symbol[rightindex].startswith('.i_'):
-            result = int(symbol[leftindex][2:]) + int(symbol[rightindex][2:])
-        # if right negative and left positive
-        else:
-            result = int(symbol[leftindex][2:]) + int(symbol[rightindex][3:])
-    # if left negative and right positive
-    elif symbol[rightindex].startswith('.i') and symbol[leftindex].startswith('.i_'):
-        result = int(symbol[leftindex][3:]) + int(symbol[rightindex][2:])
-    # if left negative and right negative
-    else:
-        result = int(symbol[leftindex][3:]) + int(symbol[rightindex][3:])
+    leftreg = 'r0'
+    rightreg = 'r1'
+    destreg = 'r2'
 
-    outfile.write('          ldr r0, =' + symbol[leftindex] + '\n')
-    outfile.write('          ldr r0, [r0]\n')
-    outfile.write('          ldr r1, =' + symbol[rightindex] + '\n')
-    outfile.write('          ldr r1, [r1]\n')
-    outfile.write('          add r0, r0, r1\n')
-    tempindex = cg_gettemp()
-    outfile.write('          ldr r1, =' + symbol[tempindex] + '\n')
-    outfile.write('          str r0, [r1]\n')
-    if result >= 0:
-        return enter('.i' + str(result), str(result), False)
+    if not symbol[leftindex].startswith('r'):
+        if symbol[leftindex].startswith('.i'):
+            outfile.write('          mov ' + leftreg +
+                          ', #' + symbol[leftindex] + '\n')
+        else:
+            outfile.write('          ldr ' + leftreg +
+                          ', =' + symbol[leftindex] + '\n')
+        needword[leftindex] = True
     else:
-        return enter('.i_' + str(-result), str(result), False)
+        leftreg = loc[leftindex]
+
+    if not symbol[rightindex].startswith('r'):
+        if symbol[rightindex].startswith('.i'):
+            outfile.write('          mov ' + rightreg +
+                          ', #' + symbol[rightindex] + '\n')
+        else:
+            outfile.write('          ldr ' + rightreg +
+                          ', =' + symbol[rightindex] + '\n')
+        needword[rightindex] = True
+    else:
+        rightreg = loc[rightindex]
+
+    tempindex = cg_gettemp()
+    if symbol[tempindex].startswith('r'):
+        symbol[tempindex] = destreg
+    outfile.write('          add ' + destreg + ', ' +
+                  leftreg + ', ' + rightreg + '\n')
+    if symbol[tempindex].startswith('r'):
+        outfile.write('          ldr r1, =' + symbol[tempindex] + '\n')
+        outfile.write('          str r0, [r1]\n')
+        needword[tempindex] = True
+    return tempindex
 
 
 def cg_mul(leftindex, rightindex):
@@ -440,36 +513,47 @@ def cg_mul(leftindex, rightindex):
         tempcount -= 1
     if symbol[rightindex].startswith('.t'):
         tempcount -= 1
+
+    result = 0
     if symbol[leftindex].startswith('.i'):
-        if symbol[rightindex].startswith('.i'):
-            result = int(symbol[leftindex][2:]) * int(symbol[rightindex][2:])
+        if symbol[leftindex].startswith('.i_'):
+            result += int(symbol[leftindex][3:])
         else:
-            print("Bruh 1")
-    else:
-        print("Bruh 2")
+            result += int(symbol[leftindex][2:])
+
+    if symbol[rightindex].startswith('.i'):
+        if symbol[rightindex].startswith('.i_'):
+            result *= int(symbol[rightindex][3:])
+        else:
+            result *= int(symbol[rightindex][2:])
 
     if result >= 0:
         return enter('.i' + str(result), str(result), False)
     else:
         return enter('.i_' + str(-result), str(result), False)
 
-    outfile.write('          ldr r0, =' + symbol[leftindex] + '\n')
-    outfile.write('          ldr r0, [r0]\n')
-    outfile.write('          ldr r1, =' + symbol[rightindex] + '\n')
-    outfile.write('          ldr r1, [r1]\n')
-    outfile.write('          mul r0, r1, r0\n')
-    tempindex = cg_gettemp()
-    outfile.write('          ldr r1, =' + symbol[tempindex] + '\n')
-    outfile.write('          str r0, [r1]\n')
-
 
 def cg_neg(index):
-    outfile.write('          ldr r0, =' + symbol[index] + '\n')
-    outfile.write('          ldr r0, [r0]\n')
+    global tempcount
+    if symbol[index].startswith('.t'):
+        tempcount -= 1
+    if loc[index] == None:
+        if symbol[index].startswith('.i'):
+            outfile.write('          ldr r0, =' + symbol[index] + '\n')
+        else:
+            outfile.write('          ldr r0, =' + symbol[index] + '\n')
+            outfile.write('          ldr r0, [r0]\n')
+        needword[index] = True
+    else:
+        outfile.write('          mov r0, ' + loc[index] + '\n')
     outfile.write('          neg r0, r0\n')
     tempindex = cg_gettemp()
-    outfile.write('          ldr r1, =' + symbol[tempindex] + '\n')
-    outfile.write('          str r0, [r1]\n')
+    if loc[tempindex] == None:
+        outfile.write('          ldr r1, =' + symbol[tempindex] + '\n')
+        outfile.write('          str r0, [r1]\n')
+        needword[tempindex] = True
+    else:
+        outfile.write('          mov ' + loc[tempindex] + ', r0\n')
     return tempindex
 
 
