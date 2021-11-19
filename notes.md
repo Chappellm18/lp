@@ -70,11 +70,128 @@ f(n) = n + 1
 
 AST -> Abstract Structure Tree
 
-
 # pumping
+
 S = uvwxy
     uv^iwx^iy = L
     |vwx| < L
     |vx| > 0
 
+# Turing Machine
+________________________________________
+    T # W 
+________________________________________
+--T to H'--
+T halts on W 
+then
+H' Loops
+________________________________________
+    H' # W 
+________________________________________
+--H' to H''--
+H'' has a front end
+T => [T] # T
+[T] -> simulates H'
+________________________________________
+    H'' # H'' 
+________________________________________
+
+
+
+# sUCCESSOR fUNCTIONS
+
+s(x) = x + 1
+
+
+## def of addition
++(x,y) = x              for y = 0
++(x,s(y)) = s(+(x,y))   for y > 0
+
+
+## def of mult
+*(x,y) = 0              for y = 0
+*(x,s(y)) = +( *(x,y))  for y > 0
+
+* Primitive Recursion
+* Ackermann's Function
+
+Computable Functions
+    
+    |-> ackermann
+    |    |
+    |    |-> function
+    |
+    |
+    |-> primitives
+    |    |
+    |    |-> addition
+    |    |
+    |    |-> multiplication
+    |    |
+    |    |-> ect.
+    |
+
+# c code
+
+|
+|   sheeeeet we out here writing c ?? 
+|
+
+## add function
+int add(int x, int y) {
+    if (y == 0) {
+        return x;
+    } else {
+        return add(x, y - 1) + 1;
+    }
+}
+## main function
+int main() {
+    printf("%d\n", add(2, 3));
+    return 0;
+}
+
+
+## Ackermann's Function
+A(x,y) = y + 1              for x = 0
+A(x,y) = A(x-1, 1)          for x > 0 and y = 0
+A(x,y) = A(x-1, A(x,y-1))   for x > 0 and y > 0
+
+There is no primitive for this function
+
+Call the function with
+0,0
+1,1
+2,2
+... until it breaks
+
+def ackermann(x,y) {
+    if (x == 0) {
+        return y + 1;
+    } else if (y == 0) {
+        return ackermann(x - 1, 1);
+    } else {
+        return ackermann(x - 1, ackermann(x, y - 1));
+    }
+}
+
+
+# Halting stuff again (proof that it dont exist)
+
+p -->   |               | --> "Halt" (h halts)
+        |      H'       |
+w -->   |_______________| --> "Loop" (h halts)
+
+
+"Halt" -> while(true) {infitine loop};
+
+
+duplicate
+        |       | - p -> |     | --> H' halts
+p -->   |  dup  |        |  H' |
+        |_______| - p -> |_____| --> H' loops
+
+What happens when the input p is changed to H''
+
+Not solveable
 

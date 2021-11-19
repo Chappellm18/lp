@@ -1,0 +1,112 @@
+Turing Machine Simulator Version 3.1       Tue Nov 16 20:15:36 2021
+
+Your name:       Chappell Mitchell J
+tog file:        t20.chappell.tog
+Tape file:       t20.t
+Definition file: t20.tm
+
+0           Start state
+{3}
+
+0 1 x R 1       Check 1s right
+1 - y R 1       Check for - 
+2 1 z R 2       Check 1s left
+
+
+Number of states: 3
+Number of quintuples: 3
+
+--------------- TAPE  1 ---------------------------------
+1-1                0
+---------------------------------------------------------
+     [0>1-1
+     x[1>-1
+     xy[1>1
+       REJECT
+       2 quintuple(s) executed
+       1's left on tape: 1                     Wrong
+       1's expected:     0
+
+--------------- TAPE  2 ---------------------------------
+11-1               1
+---------------------------------------------------------
+     [0>11-1
+     x[1>1-1
+       REJECT
+       1 quintuple(s) executed
+       1's left on tape: 2                     Wrong
+       1's expected:     1
+
+--------------- TAPE  3 ---------------------------------
+111-1              2
+---------------------------------------------------------
+     [0>111-1
+     x[1>11-1
+       REJECT
+       1 quintuple(s) executed
+       1's left on tape: 3                     Wrong
+       1's expected:     2
+
+--------------- TAPE  4 ---------------------------------
+1111-1             3
+---------------------------------------------------------
+     [0>1111-1
+     x[1>111-1
+       REJECT
+       1 quintuple(s) executed
+       1's left on tape: 4                     Wrong
+       1's expected:     3
+
+--------------- TAPE  5 ---------------------------------
+11-11              0
+---------------------------------------------------------
+     [0>11-11
+     x[1>1-11
+       REJECT
+       1 quintuple(s) executed
+       1's left on tape: 3                     Wrong
+       1's expected:     0
+
+--------------- TAPE  6 ---------------------------------
+111-11             1
+---------------------------------------------------------
+     [0>111-11
+     x[1>11-11
+       REJECT
+       1 quintuple(s) executed
+       1's left on tape: 4                     Wrong
+       1's expected:     1
+
+--------------- TAPE  7 ---------------------------------
+111-111            0
+---------------------------------------------------------
+     [0>111-111
+     x[1>11-111
+       REJECT
+       1 quintuple(s) executed
+       1's left on tape: 5                     Wrong
+       1's expected:     0
+
+--------------- TAPE  8 ---------------------------------
+1111111111-111     7
+---------------------------------------------------------
+     [0>1111111111-111
+     x[1>111111111-111
+       REJECT
+       1 quintuple(s) executed
+       1's left on tape: 12                     Wrong
+       1's expected:     7
+
+V3.1 t20.chappell.tog: s3/q3/mqe2/mc12
+0813 Report for Chappell Mitchell J: 8 errors detected
+f821 Tue Nov 16 20:15:36 2021
+
+
+I had a tough time coding this. Need to study the turing Machine more
+explantion of the what t20.tm is supposed to be
+
+check right side for all the 1s mark each one. x
+check for the - at each new spot. mark. y
+check left side for all the 1s mark each one. z
+check for the differnce of 1s on each side. x == z, x > z, x < z
+return the differnce.
