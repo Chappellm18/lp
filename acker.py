@@ -1,20 +1,19 @@
 # Ackermann function
-def ackermann(x, y):
+def acker1(x, y):
+
     if x == 0:
         return y + 1
-    elif y == 0 and x > 0:
-        return ackermann(x-1, 1)
-    elif y > 0 and x > 0:
-        return ackermann(x-1, ackermann(x, y-1))
+    elif y == 0:
+        return acker1(x - 1, 1)
     else:
-        return "Error"
+        return acker1(x - 1, acker1(x, y - 1))
 
 
 def main():
     x = 0
     while True:
         print("In: " + str(x))
-        print("Out: " + str(ackermann(x, x)))
+        print("Out: " + str(acker1(x, x)))
         x += 1
 
 
